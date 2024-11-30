@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # todopj
 
 A new Flutter project.
@@ -14,3 +15,6 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+=======
+# ToDoProject
+>>>>>>> 7960d779bc8980e1d08ea81f352a18455a0577d3
