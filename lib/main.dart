@@ -8,7 +8,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '할 일 목록',
+      title: '할 일 빙고',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
@@ -23,29 +23,26 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  // 할 일 목록을 저장할 리스트
-  List<String> _tasks = [];
-  List<String?> _bingoBoard = List.filled(25, null); // 5x5 빙고판 (null로 초기화)
+  List<String> _tasks = []; // 할 일 목록
+  List<bool> _completedTasks = List.filled(25, false); // 빙고판의 완료 여부
+  List<String?> _bingoBoard = List.filled(25, null); // 5x5 빙고판
 
-  // 할 일 추가하는 함수
   void _addTask(String task) {
     setState(() {
-      _tasks.add(task); // 새 할 일을 리스트에 추가
+      _tasks.add(task);
     });
   }
 
-  // 할 일 삭제하는 함수
   void _removeTask(int index) {
     setState(() {
-      _tasks.removeAt(index); // 리스트에서 해당 항목 삭제
+      _tasks.removeAt(index);
     });
   }
 
-  // 할 일 추가 화면을 띄우는 함수
   void _showAddTaskDialog() {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (context) {
         String newTask = '';
         return AlertDialog(
           title: Text('할 일 추가'),
@@ -58,14 +55,14 @@ class _MyHomePageState extends State<MyHomePage> {
           actions: [
             TextButton(
               onPressed: () {
-                _addTask(newTask); // 입력한 할 일 추가
-                Navigator.of(context).pop(); // 다이얼로그 닫기
+                _addTask(newTask);
+                Navigator.of(context).pop();
               },
               child: Text('추가'),
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // 다이얼로그 닫기
+                Navigator.of(context).pop();
               },
               child: Text('취소'),
             ),
@@ -75,24 +72,26 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  // 빙고판에 할 일 배치하는 함수
-  void _placeTaskOnBingoBoard(String task) {
-    // 빈 칸에 할 일 배치
-    for (int i = 0; i < _bingoBoard.length; i++) {
-      if (_bingoBoard[i] == null) {
-        setState(() {
-          _bingoBoard[i] = task; // 첫 번째 빈 칸에 할 일 배치
-        });
-        break;
+  bool _checkBingo() {
+    List<List<int>> bingoLines = [
+      [0, 1, 2, 3, 4], [5, 6, 7, 8, 9], [10, 11, 12, 13, 14], [15, 16, 17, 18, 19], [20, 21, 22, 23, 24], // 가로
+      [0, 5, 10, 15, 20], [1, 6, 11, 16, 21], [2, 7, 12, 17, 22], [3, 8, 13, 18, 23], [4, 9, 14, 19, 24], // 세로
+      [0, 6, 12, 18, 24], [4, 8, 12, 16, 20] // 대각선
+    ];
+
+    for (var line in bingoLines) {
+      if (line.every((index) => _completedTasks[index])) {
+        return true;
       }
     }
+    return false;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('할 일 목록'),
+        title: Text('할 일 빙고'),
       ),
       body: Column(
         children: [
@@ -101,43 +100,103 @@ class _MyHomePageState extends State<MyHomePage> {
             child: ListView.builder(
               itemCount: _tasks.length,
               itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text(_tasks[index]),
-                  trailing: IconButton(
-                    icon: Icon(Icons.delete),
-                    onPressed: () => _removeTask(index), // 삭제 버튼 눌렀을 때
+                return Draggable<String>(
+                  data: _tasks[index],
+                  child: ListTile(
+                    title: Text(_tasks[index]),
+                    trailing: IconButton(
+                      icon: Icon(Icons.delete),
+                      onPressed: () => _removeTask(index),
+                    ),
                   ),
-                  onTap: () => _placeTaskOnBingoBoard(_tasks[index]), // 할 일 클릭 시 빙고판에 배치
+                  feedback: Material(
+                    child: Text(
+                      _tasks[index],
+                      style: TextStyle(fontSize: 16, color: Colors.blue),
+                    ),
+                  ),
+                  childWhenDragging: ListTile(
+                    title: Text(
+                      _tasks[index],
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
                 );
               },
             ),
           ),
           // 빙고판 UI
           SizedBox(
-            width: 300, // 그리드의 가로 크기를 제한
-            height: 300, // 그리드의 세로 크기를 제한
+            width: 300,
+            height: 300,
             child: GridView.builder(
-              itemCount: 25, // 5x5 그리드
+              itemCount: 25,
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 5, // 5개의 열
-                crossAxisSpacing: 4, // 열 간의 간격
-                mainAxisSpacing: 4, // 행 간의 간격
+                crossAxisCount: 5,
+                crossAxisSpacing: 4,
+                mainAxisSpacing: 4,
               ),
               itemBuilder: (context, index) {
-                return GestureDetector(
-                  onTap: () {
-                    // 클릭 시 할 일을 넣을 수 있는 로직 추가 가능
+                return DragTarget<String>(
+                  onAccept: (data) {
+                    setState(() {
+                      _bingoBoard[index] = data;
+                    });
                   },
-                  child: Container(
-                    color: Colors.blueGrey[100],
-                    child: Center(
-                      child: Text(
-                        _bingoBoard[index] ?? '', // 할 일이 있을 때 그 내용을 표시
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16),
+                  builder: (context, candidateData, rejectedData) {
+                    return GestureDetector(
+                      onTap: () {
+                        if (_bingoBoard[index] != null && !_completedTasks[index]) {
+                          setState(() {
+                            _completedTasks[index] = true;
+                          });
+                          if (_checkBingo()) {
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: Text('빙고!'),
+                                content: Text('축하합니다! 빙고를 완성했어요!'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                    child: Text('확인'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      onLongPress: () {
+                        // 길게 눌러 항목 삭제
+                        setState(() {
+                          _bingoBoard[index] = null;
+                          _completedTasks[index] = false;
+                        });
+                      },
+                      child: Container(
+                        color: Colors.blueGrey[100],
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            if (_bingoBoard[index] != null)
+                              Text(
+                                _bingoBoard[index]!,
+                                style: TextStyle(fontSize: 16),
+                              ),
+                            if (_completedTasks[index])
+                              Icon(
+                                Icons.circle_outlined, // "O"를 나타내는 아이콘
+                                size: 40,
+                                color: Colors.red,
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 );
               },
             ),
@@ -145,7 +204,7 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddTaskDialog, // '+' 버튼 눌렀을 때 할 일 추가 화면
+        onPressed: _showAddTaskDialog,
         tooltip: '할 일 추가',
         child: Icon(Icons.add),
       ),
